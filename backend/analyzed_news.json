@@ -1,0 +1,28 @@
+[
+  {
+    "id": "1",
+    "headline": "Example News Article 1",
+    "source": "Example News Network",
+    "classification": "REAL",
+    "reasons": ["Credible source", "Multiple verifications"],
+    "publishedAt": "2025-08-31T05:30:00.000Z"
+  },
+  {
+    "id": "2",
+    "headline": "Example News Article 2",
+    "source": "Example News Network",
+    "classification": "FAKE",
+    "reasons": ["Unverified claims", "Sensationalist language"],
+    "publishedAt": "2025-08-30T12:00:00.000Z"
+  },
+  {
+    "id": "3",
+    "headline": "Similar Article About Market Trends",
+    "source": "Financial Insights",
+    "classification": "PARTIALLY_VERIFIED",
+    "reasons": ["Similar to verified content"],
+    "publishedAt": "2025-08-31T08:15:00.000Z",
+    "similarityScore": 0.78,
+    "similarTo": ["Market Trends Report Q3 2025"]
+  }
+]

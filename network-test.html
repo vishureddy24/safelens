@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Network Connection Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .test { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 4px; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>Network Connection Test</h1>
+    <div id="tests">
+        <div class="test" id="test1">1. Testing basic internet connectivity...</div>
+        <div class="test" id="test2">2. Testing DNS resolution for Supabase...</div>
+        <div class="test" id="test3">3. Testing connection to Supabase REST API...</div>
+        <div class="test" id="test4">4. Testing CORS configuration...</div>
+    </div>
+    <pre id="output">Running tests...
+================================</pre>
+
+    <script>
+        const output = document.getElementById('output');
+        
+        function log(message) {
+            output.textContent += `\n${new Date().toISOString()} - ${message}`;
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function test1() {
+            const el = document.getElementById('test1');
+            try {
+                const response = await fetch('https://httpbin.org/ip');
+                if (response.ok) {
+                    const data = await response.json();
+                    el.innerHTML += ` <span class="success">✓ Connected (Your IP: ${data.origin})</span>`;
+                    log('✓ Internet connection working');
+                    return true;
+                }
+                throw new Error(`Status: ${response.status}`);
+            } catch (error) {
+                el.innerHTML += ` <span class="error">✗ Failed: ${error.message}</span>`;
+                log(`❌ Internet connection test failed: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function test2() {
+            const el = document.getElementById('test2');
+            try {
+                const start = performance.now();
+                // Try to resolve the domain
+                const ip = await new Promise((resolve, reject) => {
+                    const req = new XMLHttpRequest();
+                    req.open('GET', 'https://dns.google/resolve?name=eouzksgkezyxllffnljo.supabase.co&type=A', true);
+                    req.onload = () => resolve(req.response);
+                    req.onerror = reject;
+                    req.send();
+                });
+                const time = Math.round(performance.now() - start);
+                
+                const response = JSON.parse(ip);
+                if (response.Answer && response.Answer.length > 0) {
+                    const ips = response.Answer.map(a => a.data).join(', ');
+                    el.innerHTML += ` <span class="success">✓ Resolved to: ${ips} (${time}ms)</span>`;
+                    log(`✓ DNS resolution successful (${time}ms)`);
+                    return true;
+                }
+                throw new Error('No DNS records found');
+            } catch (error) {
+                el.innerHTML += ` <span class="error">✗ Failed: ${error.message}</span>`;
+                log(`❌ DNS resolution failed: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function test3() {
+            const el = document.getElementById('test3');
+            try {
+                const start = performance.now();
+                const response = await fetch('https://eouzksgkezyxllffnljo.supabase.co/rest/v1/', {
+                    method: 'HEAD',
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndicXlkd2JibWVwaWhxZHNmYWhnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3ODI0MDYsImV4cCI6MjA3MjM1ODQwNn0.8t2UlGP4fvlib2CVeSuzZqKoBoSDTZc6P-NSx4yBTI'
+                    }
+                });
+                const time = Math.round(performance.now() - start);
+                
+                if (response.status === 404) {
+                    // Even 404 means we connected to the server
+                    el.innerHTML += ` <span class="success">✓ Connected (Status: ${response.status})</span>`;
+                    log(`✓ Successfully connected to Supabase (${time}ms)`);
+                    return true;
+                }
+                
+                // For other status codes, check if we got a response
+                const data = await response.text();
+                el.innerHTML += ` <span class="${response.ok ? 'success' : 'warning'}">Status: ${response.status}</span>`;
+                log(`Supabase response (${time}ms): ${response.status} ${response.statusText}\n${data.substring(0, 200)}`);
+                return response.ok;
+                
+            } catch (error) {
+                el.innerHTML += ` <span class="error">✗ Failed: ${error.message}</span>`;
+                log(`❌ Connection to Supabase failed: ${error.message}`);
+                if (error.cause) log(`Cause: ${error.cause}`);
+                return false;
+            }
+        }
+
+        async function test4() {
+            const el = document.getElementById('test4');
+            try {
+                const response = await fetch('https://eouzksgkezyxllffnljo.supabase.co', {
+                    method: 'OPTIONS',
+                    headers: {
+                        'Access-Control-Request-Method': 'POST',
+                        'Access-Control-Request-Headers': 'apikey,authorization,content-type'
+                    }
+                });
+                
+                const corsHeaders = {};
+                for (const [key, value] of response.headers.entries()) {
+                    if (key.toLowerCase().startsWith('access-control-')) {
+                        corsHeaders[key] = value;
+                    }
+                }
+                
+                if (Object.keys(corsHeaders).length > 0) {
+                    el.innerHTML += ` <span class="success">✓ CORS Headers Detected</span>`;
+                    log('CORS Headers:');
+                    for (const [key, value] of Object.entries(corsHeaders)) {
+                        log(`  ${key}: ${value}`);
+                    }
+                    return true;
+                } else {
+                    el.innerHTML += ` <span class="warning">No CORS headers in response</span>`;
+                    log('⚠️ No CORS headers in response');
+                    return false;
+                }
+                
+            } catch (error) {
+                el.innerHTML += ` <span class="error">✗ CORS Test Failed: ${error.message}</span>`;
+                log(`❌ CORS test failed: ${error.message}`);
+                return false;
+            }
+        }
+
+        // Run all tests
+        async function runTests() {
+            output.textContent = 'Running tests...\n================================';
+            
+            log('Starting network diagnostic tests...');
+            log(`Testing connection to: eouzksgkezyxllffnljo.supabase.co`);
+            log(`User Agent: ${navigator.userAgent}`);
+            log(`Online: ${navigator.onLine ? 'Yes' : 'No'}`);
+            
+            try {
+                await test1();
+                await test2();
+                await test3();
+                await test4();
+                
+                log('\n✅ All tests completed');
+            } catch (error) {
+                log(`\n❌ Tests failed: ${error.message}`);
+            }
+            
+            log('\nTest completed at: ' + new Date().toISOString());
+        }
+
+        // Start tests when page loads
+        window.addEventListener('DOMContentLoaded', runTests);
+    </script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "safelens",
+  "version": "1.0.0",
+  "description": "SafeLens - AI-powered news verification and fact-checking platform",
+  "private": true,
+  "scripts": {
+    "install-all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "frontend:dev": "npm --prefix frontend run dev",
+    "frontend:build": "npm --prefix frontend run build",
+    "frontend:preview": "npm --prefix frontend run preview",
+    "frontend:lint": "npm --prefix frontend run lint",
+    "dev": "concurrently \"npm run frontend:dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "http-proxy-middleware": "^3.0.5"
+  }
+}

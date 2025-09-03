@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Supabase Connection Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        const SUPABASE_URL = 'https://eouzksgkezyxllffnljo.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvdXprc2drZXp5eGxsZmZubGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5MzEyNTksImV4cCI6MjA3MTUwNzI1OX0.TgF2LaLpOGsEm2_UrqsTHmkYuqdnn2nkegGBvMyRl0o';
+
+        async function testConnection() {
+            const output = document.getElementById('output');
+            output.innerHTML = 'Testing connection...<br>';
+            
+            try {
+                // Test 1: Basic fetch to Supabase
+                output.innerHTML += '1. Testing basic connection... ';
+                const pingResponse = await fetch(SUPABASE_URL);
+                output.innerHTML += `✓ Success (Status: ${pingResponse.status})<br>`;
+
+                // Test 2: Initialize Supabase client
+                output.innerHTML += '2. Initializing Supabase client... ';
+                const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+                output.innerHTML += '✓ Success<br>';
+
+                // Test 3: Get auth settings
+                output.innerHTML += '3. Testing auth settings... ';
+                const { data: settings, error: settingsError } = await supabase.auth.getSession();
+                
+                if (settingsError) throw settingsError;
+                output.innerHTML += '✓ Success (No active session)<br>';
+
+                // Test 4: Try to sign in (should fail with 400 for invalid credentials)
+                output.innerHTML += '4. Testing authentication... ';
+                const { error: authError } = await supabase.auth.signInWithPassword({
+                    email: 'test@example.com',
+                    password: 'wrongpassword'
+                });
+
+                if (authError && authError.status === 400) {
+                    output.innerHTML += '✓ Expected auth failure (invalid credentials test passed)<br>';
+                    output.innerHTML += '✅ <strong>All tests passed! Your Supabase connection is working.</strong><br>';
+                    output.innerHTML += 'The issue might be with your authentication setup or user credentials.';
+                } else {
+                    output.innerHTML += `Unexpected response: ${JSON.stringify(authError)}<br>`;
+                }
+
+            } catch (error) {
+                output.innerHTML += `<strong>❌ Error:</strong> ${error.message}<br>`;
+                if (error.response) {
+                    output.innerHTML += `Response status: ${error.response.status}<br>`;
+                    output.innerHTML += `Response data: ${JSON.stringify(error.response.data)}<br>`;
+                }
+                output.innerHTML += `<pre>${error.stack}</pre>`;
+            }
+        }
+    </script>
+</head>
+<body style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+    <h1>Supabase Connection Test</h1>
+    <p>Click the button below to test the connection to your Supabase project.</p>
+    <button onclick="testConnection()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+        Test Connection
+    </button>
+    <div id="output" style="margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px; white-space: pre-wrap;">
+        Click the button to start the test...
+    </div>
+    <div style="margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 4px;">
+        <h3>Next Steps:</h3>
+        <ul>
+            <li>If you see a 404 or connection error, check your Supabase URL</li>
+            <li>If you see an "Invalid API key" error, verify your anon/public key</li>
+            <li>If authentication fails, check your authentication settings in the Supabase dashboard</li>
+            <li>Make sure your Supabase project is not paused</li>
+        </ul>
+    </div>
+</body>
+</html>

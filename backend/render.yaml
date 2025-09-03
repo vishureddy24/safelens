@@ -1,0 +1,53 @@
+services:
+  - type: web
+    name: safelens-backend
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: FRONTEND_URL
+        value: https://safelens.vercel.app
+      - key: TELEGRAM_BOT_TOKEN
+        fromService:
+          name: safelens-bot
+          type: secret
+      - key: NEWS_API_KEY
+        fromService:
+          name: news-api-key
+          type: secret
+      - key: HIVE_API_KEY
+        fromService:
+          name: hive-api-key
+          type: secret
+      - key: OPENROUTER_API_KEY
+        fromService:
+          name: openrouter-api-key
+          type: secret
+      - key: FINNHUB_API_KEY
+        fromService:
+          name: finnhub-api-key
+          type: secret
+      - key: SIGHTENGINE_API_USER
+        fromService:
+          name: sightengine-api-user
+          type: secret
+      - key: SIGHTENGINE_API_SECRET
+        fromService:
+          name: sightengine-api-secret
+          type: secret
+      - key: JWT_SECRET
+        fromService:
+          name: jwt-secret
+          type: secret
+      - key: VITE_SUPABASE_URL
+        fromService:
+          name: supabase-url
+          type: secret
+      - key: VITE_SUPABASE_ANON_KEY
+        fromService:
+          name: supabase-anon-key
+          type: secret

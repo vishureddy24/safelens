@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Supabase Auth Test</title>
+    <!-- Load Supabase with error handling -->
+    <script>
+        // Check if Supabase is loaded
+        function checkSupabaseLoaded() {
+            if (window.supabase) {
+                console.log('Supabase loaded successfully');
+                document.documentElement.setAttribute('data-supabase-loaded', 'true');
+            } else {
+                console.error('Supabase failed to load');
+                document.documentElement.setAttribute('data-supabase-loaded', 'false');
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="checkSupabaseLoaded()" onerror="console.error('Failed to load Supabase script')"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .test { margin: 15px 0; padding: 15px; border: 1px solid #ddd; border-radius: 4px; }
+        .success { color: green; font-weight: bold; }
+        .error { color: red; font-weight: bold; }
+        pre { background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        input { padding: 8px; margin: 5px 0; width: 200px; }
+        button { padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <h1>Supabase Auth Test</h1>
+    
+    <div class="test">
+        <h3>Test Authentication</h3>
+        <div>
+            <div><input type="email" id="email" placeholder="Email" value="test@example.com"></div>
+            <div><input type="password" id="password" placeholder="Password" value="password123"></div>
+            <button id="authBtn" type="button" disabled>Sign In</button>
+        </div>
+        <div id="authStatus">Initializing...</div>
+    </div>
+    
+    <div class="test">
+        <h3>Console Log</h3>
+        <pre id="console">Ready to test authentication...
+================================</pre>
+    </div>
+
+    <script>
+        // Wait for DOM to be fully loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get console element
+            const consoleEl = document.getElementById('console');
+            if (!consoleEl) {
+                console.error('Console element not found');
+                return;
+            }
+            
+            // Log function
+            function log(message) {
+                const timestamp = new Date().toISOString();
+                consoleEl.textContent += `\n${timestamp} - ${message}`;
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+                console.log(`[${timestamp}]`, message);
+            }
+            
+            log('DOM fully loaded');
+            
+            // Check if running from file:// protocol
+            if (window.location.protocol === 'file:') {
+                const statusEl = document.getElementById('authStatus');
+                statusEl.innerHTML = `
+                    <div class="error">
+                        <p>⚠️ This page is being opened directly from the filesystem.</p>
+                        <p>Please run it through a local development server to avoid CORS issues:</p>
+                        <pre>cd /path/to/project
+python -m http.server 8080</pre>
+                        <p>Then open: <a href="http://localhost:8080/test-auth.html" target="_blank">http://localhost:8080/test-auth.html</a></p>
+                    </div>
+                `;
+                document.getElementById('authBtn').disabled = true;
+                return;
+            }
+        
+        // Using the Supabase URL and key from the backend .env file for consistency
+        const SUPABASE_URL = 'https://eouzksgkezyxllffnljo.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVvdXprc2drZXp5eGxsZmZubGpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU5MzEyNTksImV4cCI6MjA3MTUwNzI1OX0.TgF2LaLpOGsEm2_UrqsTHmkYuqdnn2nkegGBvMyRl0o';
+        
+        log('Starting Supabase initialization...');
+        
+        // Check if Supabase is loaded
+        if (!window.supabase) {
+            log('❌ Supabase library not loaded. Please check the browser console for errors.');
+            document.getElementById('authBtn').disabled = true;
+            document.getElementById('authStatus').innerHTML = '<span class="error">Error: Supabase library failed to load. Check console for details.</span>';
+        } else {
+            console.log('Initializing Supabase client...');
+            console.log('Supabase URL:', SUPABASE_URL);
+            console.log('Supabase Key:', SUPABASE_KEY ? '*** (key exists)' : 'MISSING');
+            
+            try {
+                // Initialize Supabase client
+                window.supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: false,
+                        detectSessionInUrl: true
+                    }
+                });
+                
+                console.log('Supabase client initialized');
+                log('✅ Ready to authenticate');
+                
+                log('✅ Supabase client initialized');
+                document.getElementById('authBtn').disabled = false;
+                document.getElementById('authStatus').innerHTML = 'Ready to authenticate';
+                
+            } catch (error) {
+                console.error('Error initializing Supabase:', error);
+                log(`❌ Error initializing Supabase: ${error.message}`);
+                document.getElementById('authBtn').disabled = true;
+                document.getElementById('authStatus').innerHTML = '<span class="error">Error initializing Supabase. Check console for details.</span>';
+            }
+        }
+        
+        // Test authentication
+        document.getElementById('authBtn').addEventListener('click', async (e) => {
+            console.log('Sign in button clicked');
+            e.preventDefault();
+            
+            if (!window.supabaseClient) {
+                log('❌ Supabase client not initialized. Please check console for errors.');
+                return;
+            }
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                log('⚠️ Please enter both email and password');
+                return;
+            }
+            
+            const authStatus = document.getElementById('authStatus');
+            authStatus.innerHTML = 'Signing in...';
+            
+            try {
+                log(`Attempting to sign in as ${email}...`);
+                const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                
+                if (error) throw error;
+                
+                authStatus.innerHTML = '<span class="success">✓ Authentication successful</span>';
+                log('✓ Authentication successful');
+                log('User data: ' + JSON.stringify(data.user, null, 2));
+                
+            } catch (error) {
+                authStatus.innerHTML = `<span class="error">✗ ${error.message}</span>`;
+                log(`❌ Authentication failed: ${error.message}`);
+                
+                if (error.message.includes('Failed to fetch')) {
+                    log('\n⚠️ CORS Issue Detected:');
+                    log('1. Go to your Supabase Dashboard');
+                    log('2. Navigate to: Authentication > URL Configuration');
+                    log('3. Add this URL to "Site URL" and "Redirect URLs": ' + window.location.origin);
+                    log('4. Save changes and try again');
+                }
+            }
+        });
+        }); // End of DOMContentLoaded
+    </script>
+</body>
+</html>
