@@ -9,7 +9,7 @@ import analysisRoutes from './routes/analysis.js';
 import analyzedNewsRoutes from './routes/analyzedNews.js';
 import newsRoutes from './routes/news.js';
 import newsVerificationRoutes from './routes/newsVerificationRoutes.js';
-import './services/telegramBot.ts'; // Initialize Telegram bot
+import './services/telegramBot.js'; // Initialize Telegram bot
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 
