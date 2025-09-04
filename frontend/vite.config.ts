@@ -21,8 +21,16 @@ export default defineConfig(({ mode }) => ({
     }
   } : undefined,
   preview: {
-    port: 5173,
+    port: 3000,
     strictPort: true,
+    proxy: {
+      '/api': {
+        target: process.env.VITE_BACKEND_URL || 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path: string) => path.replace(/^\/api/, '')
+      }
+    }
   },
   plugins: [
     react(),
@@ -41,6 +49,16 @@ export default defineConfig(({ mode }) => ({
   },
   build: {
     target: 'esnext',
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-slot'],
+          utils: ['date-fns', 'lodash', 'zod'],
+        }
+      }
+    },
     commonjsOptions: {
       transformMixedEsModules: true,
     }
