@@ -4,12 +4,10 @@ import FormData from 'form-data';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import sightEngineService from './sightengineService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Import SightEngine service
-import sightEngineService from './sightEngineService.js';
 
 class HiveService {
   constructor() {
