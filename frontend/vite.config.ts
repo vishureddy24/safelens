@@ -4,7 +4,6 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const config: UserConfig = {
     base: '/',
@@ -44,12 +43,7 @@ export default defineConfig(({ mode }) => {
     build: {
       target: 'esnext',
       rollupOptions: {
-        external: ['jspdf'],
-        output: {
-          manualChunks: {
-            jspdf: ['jspdf']
-          }
-        }
+        external: ['jspdf']
       }
     },
     optimizeDeps: {
