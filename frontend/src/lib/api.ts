@@ -2,8 +2,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export const api = {
   get: async (endpoint: string, options: RequestInit = {}) => {
-    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
-    const response = await fetch(url, {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       method: 'GET',
       headers: {
@@ -12,18 +11,11 @@ export const api = {
       },
       credentials: 'include',
     });
-    
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'An error occurred');
-    }
-    
-    return response.json();
+    return handleResponse(response);
   },
-  
+
   post: async (endpoint: string, data: any, options: RequestInit = {}) => {
-    const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
-    const response = await fetch(url, {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       ...options,
       method: 'POST',
       headers: {
@@ -33,14 +25,16 @@ export const api = {
       body: JSON.stringify(data),
       credentials: 'include',
     });
-    
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || 'An error occurred');
-    }
-    
-    return response.json();
+    return handleResponse(response);
   },
-  
+
   // Add other HTTP methods as needed
 };
+
+async function handleResponse(response: Response) {
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || 'An error occurred');
+  }
+  return response.json();
+}
