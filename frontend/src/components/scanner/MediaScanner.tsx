@@ -126,7 +126,8 @@ export const MediaScanner = () => {
       });
 
       // Call backend API
-      const response = await fetch('http://localhost:3001/api/analyze/media', {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
+      const response = await fetch(`${backendUrl}/api/analyze/media`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
