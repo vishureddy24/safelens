@@ -1,5 +1,11 @@
-require('dotenv').config();
-const path = require('path');
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const env = process.env.NODE_ENV || 'development';
 
@@ -135,4 +141,4 @@ const config = {
 // Validate required environment variables
 config.validate();
 
-module.exports = config;
+export default config;
