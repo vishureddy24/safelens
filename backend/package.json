@@ -5,7 +5,7 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf dist/ && tsc && cp -r src/public dist/ 2>/dev/null || :",
     "start": "node --experimental-specifier-resolution=node dist/index.js",
     "dev": "nodemon --experimental-specifier-resolution=node --exec ts-node src/index.ts",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
