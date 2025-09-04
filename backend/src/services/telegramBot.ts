@@ -7,24 +7,42 @@ dotenv.config();
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:3001';
 
-if (!TELEGRAM_BOT_TOKEN) {
-  throw new Error('TELEGRAM_BOT_TOKEN is not defined in .env');
-}
+// Only initialize the bot if the token is provided
+let bot: TelegramBot | null = null;
 
-// Initialize the bot with polling
-const bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
+const initializeBot = async () => {
+  if (!TELEGRAM_BOT_TOKEN) {
+    console.warn('TELEGRAM_BOT_TOKEN is not defined. Telegram bot will not be available.');
+    return;
+  }
 
-// Log bot info when started
-bot.getMe().then((botInfo) => {
-  console.log(`🤖 Bot started: @${botInfo.username}`);
-  console.log('📡 Bot is running in polling mode');
-}).catch((error) => {
+  try {
+    bot = new TelegramBot(TELEGRAM_BOT_TOKEN, { polling: true });
+    
+    // Log bot info when started
+    const botInfo = await bot.getMe();
+    console.log(`🤖 Bot started: @${botInfo.username}`);
+    console.log('📡 Bot is running in polling mode');
+    
+    return bot;
+  } catch (error) {
+    console.error('Error initializing Telegram bot:', error);
+    return null;
+  }
+};
+
+// Initialize the bot
+initializeBot().catch(error => {
   console.error('Failed to start bot:', error);
-  process.exit(1);
 });
 
 // Handle incoming messages
-bot.on('message', async (msg) => {
+bot?.on('message', async (msg) => {
+  if (!bot) {
+    console.warn('Received message but bot is not initialized');
+    return;
+  }
+
   const chatId = msg.chat.id;
   const messageText = msg.text;
   const userId = msg.from?.id;
@@ -77,12 +95,20 @@ bot.on('message', async (msg) => {
 });
 
 // Error handling
-bot.on('polling_error', (error) => {
+bot?.on('polling_error', (error) => {
   console.error('Polling error:', error);
 });
 
 // Graceful shutdown
-process.once('SIGINT', () => bot.stopPolling());
-process.once('SIGTERM', () => bot.stopPolling());
+const shutdown = () => {
+  if (bot) {
+    console.log('Shutting down bot...');
+    bot.stopPolling();
+  }
+  process.exit(0);
+};
+
+process.once('SIGINT', shutdown);
+process.once('SIGTERM', shutdown);
 
 export default bot;
