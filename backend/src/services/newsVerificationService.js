@@ -13,13 +13,17 @@ class NewsVerificationService {
         ];
     }
 
-    async verifyNews(headline) {
+    async verifyNews(headline, content = '') {
         try {
+            if (!headline) {
+                throw new Error('Headline is required');
+            }
+            
             // Step 1: Check News API
             const newsApiResults = await this.checkNewsAPI(headline);
             
             // Step 2: Analyze content
-            const analysis = this.analyzeContent(headline);
+            const analysis = this.analyzeContent(content || headline);
             
             // Step 3: Determine verification status
             const verification = this.determineVerificationStatus(newsApiResults, analysis);
@@ -27,8 +31,8 @@ class NewsVerificationService {
             return {
                 status: verification.status,
                 confidence: verification.confidence,
-                sources: newsApiResults.sources,
-                reasons: verification.reasons
+                sources: newsApiResults.sources || [],
+                reasons: verification.reasons || []
             };
         } catch (error) {
             console.error('Error in news verification:', error);
@@ -36,7 +40,7 @@ class NewsVerificationService {
                 status: 'unverified',
                 confidence: 0,
                 sources: [],
-                reasons: ['Error during verification']
+                reasons: [error.message || 'Error during verification']
             };
         }
     }
