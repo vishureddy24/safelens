@@ -32,7 +32,7 @@ const NewsVerification = () => {
     setError(null);
 
     try {
-      const response = await fetch('/api/news/verify', {
+      const response = await fetch('/api/news-verification', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
