@@ -5,24 +5,30 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  base: '/',
   server: {
     host: "0.0.0.0",
     port: 5173,
-    strictPort: false,
+    strictPort: true,
     open: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: process.env.VITE_API_URL || 'http://localhost:3001',
         changeOrigin: true,
         secure: false,
+        rewrite: (path: string) => path.replace(/^\/api/, '')
       },
     },
+  },
+  preview: {
+    port: 5173,
+    strictPort: true,
   },
   plugins: [
     react(),
     mode === 'development' &&
     componentTagger(),
-  ].filter(Boolean),
+  ].filter(Boolean) as any[],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
