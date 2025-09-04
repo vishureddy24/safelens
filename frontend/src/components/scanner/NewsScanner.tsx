@@ -1,19 +1,64 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Newspaper, AlertTriangle, CheckCircle, Search, Filter, Eye, Zap, RefreshCw, EyeOff, ShieldCheck, X } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { 
+  Newspaper, 
+  AlertTriangle, 
+  CheckCircle, 
+  Search, 
+  Filter, 
+  Eye, 
+  Zap, 
+  RefreshCw, 
+  EyeOff, 
+  ShieldCheck, 
+  X 
+} from "lucide-react";
+import { 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle, 
+  CardDescription 
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Select, 
+  SelectContent, 
+  SelectItem, 
+  SelectTrigger, 
+  SelectValue 
+} from "@/components/ui/select";
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
 import { Alert } from "@/components/ui/alert";
+import { api } from "@/lib/api";
+
+type Classification = 'REAL' | 'FAKE' | 'PARTIALLY_VERIFIED' | 'UNVERIFIED' | 'PENDING';
+
+interface VerificationSource {
+  name: string;
+  url: string;
+  isTrusted: boolean;
+}
+
+interface VerificationResult {
+  status: 'verified' | 'partially_verified' | 'unverified' | null;
+  confidence: number;
+  reasons: string[];
+  sources: VerificationSource[];
+}
 
 interface NewsItem {
   id: string;
   headline: string;
   source: string;
-  classification: 'REAL' | 'FAKE' | 'PARTIALLY_VERIFIED' | 'UNVERIFIED' | 'PENDING';
+  classification: Classification;
   reasons: string[];
   publishedAt: string;
   url?: string;
@@ -27,16 +72,27 @@ interface NewsItem {
 }
 
 export const NewsScanner = () => {
+  // News verification state
+  const [verificationText, setVerificationText] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationResult, setVerificationResult] = useState<VerificationResult>({
+    status: null,
+    confidence: 0,
+    reasons: [],
+    sources: []
+  });
+  
+  // News scanning state
   const [isScanning, setIsScanning] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [analyzedNews, setAnalyzedNews] = useState<NewsItem[]>([]);
   const [pastedNews, setPastedNews] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [riskFilter, setRiskFilter] = useState("all");
   const [category, setCategory] = useState("business");
-  const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
   const [isLoadingNews, setIsLoadingNews] = useState(false);
+  
+  // News articles state
   const [newsArticles, setNewsArticles] = useState<Array<{
     title: string;
     description: string;
@@ -45,17 +101,13 @@ export const NewsScanner = () => {
     publishedAt: string;
     source: { name: string };
   }>>([]);
-  const newsCache = useRef<{data: NewsItem[], timestamp: number} | null>(null);
   
-  // News verification state
-  const [verificationText, setVerificationText] = useState("");
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [verificationResult, setVerificationResult] = useState<{
-    status: 'verified' | 'partially_verified' | 'unverified' | null;
-    confidence: number;
-    reasons: string[];
-    sources: Array<{name: string, url: string, isTrusted: boolean}>;
-  } | null>(null);
+  // Error handling
+  const [error, setError] = useState<string | null>(null);
+  
+  // Misc state
+  const [retryCount, setRetryCount] = useState(0);
+  const newsCache = useRef<{data: NewsItem[], timestamp: number} | null>(null);
 
   // Format date for display
   const formatDate = (dateString: string) => {
@@ -80,44 +132,42 @@ export const NewsScanner = () => {
   const handleVerifyNews = async (newsItem: NewsItem) => {
     try {
       // Update the news item to show it's being verified
-      setAnalyzedNews(prev => prev.map(item => 
-        item.id === newsItem.id 
-          ? { ...item, classification: 'PENDING', reasons: [] }
-          : item
-      ));
+      setAnalyzedNews(prev => 
+        prev.map(item => 
+          item.id === newsItem.id 
+            ? { 
+                ...item, 
+                classification: 'PENDING' as const, 
+                reasons: [] 
+              }
+            : item
+        )
+      );
 
-      const response = await fetch('/api/news/verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          headline: newsItem.headline,
-          content: newsItem.content || '',
-          source: newsItem.source,
-          url: newsItem.url || ''
-        }),
+      const response = await api.post('/api/news-verification', {
+        headline: newsItem.headline,
+        content: newsItem.content || '',
+        source: newsItem.source,
+        url: newsItem.url || ''
       });
 
-      const result = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(result.message || `HTTP error! status: ${response.status}`);
-      }
-
-      if (!result || !result.data) {
+      const result = response.data;
+      if (!result) {
         throw new Error('Invalid response format from verification service');
       }
       
       // Determine the final classification
-      let finalClassification = 'UNVERIFIED';
-      if (result.data.status) {
-        finalClassification = String(result.data.status).toUpperCase();
+      let finalClassification: Classification = 'UNVERIFIED';
+      if (result.status) {
+        const status = String(result.status).toUpperCase();
+        if (['REAL', 'FAKE', 'PARTIALLY_VERIFIED', 'UNVERIFIED', 'PENDING'].includes(status)) {
+          finalClassification = status as Classification;
+        }
       }
       
       // If any trusted source is found, mark as verified
-      if (result.data.sources?.some((source: any) => source.isTrusted)) {
-        finalClassification = 'VERIFIED';
+      if (result.sources?.some((source: any) => source.isTrusted)) {
+        finalClassification = 'REAL';
       }
       
       // Update the news item with verification results
@@ -126,9 +176,9 @@ export const NewsScanner = () => {
           ? { 
               ...item, 
               classification: finalClassification,
-              reasons: result.data.reasons || [],
-              similarityScore: result.data.similarityScore,
-              similarTo: result.data.similarTo || []
+              reasons: result.reasons || [],
+              similarityScore: result.similarityScore,
+              similarTo: result.similarTo || []
             }
           : item
       ));
@@ -151,33 +201,35 @@ export const NewsScanner = () => {
     if (!verificationText.trim()) return;
     
     setIsVerifying(true);
-    setVerificationResult(null);
+    setVerificationResult({
+      status: null,
+      confidence: 0,
+      reasons: [],
+      sources: []
+    });
     
     try {
-      const response = await fetch('/api/news/verify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          headline: verificationText,
-          content: ''
-        }),
+      const response = await api.post('/api/news-verification', {
+        headline: verificationText,
+        content: ''
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const result = response.data;
+      if (!result) {
+        throw new Error('No data received from verification service');
       }
-
-      const result = await response.json();
-      const verificationData = result.data;
       
       // If any trusted source is found, mark as verified
-      if (verificationData.sources && verificationData.sources.some((source: any) => source.isTrusted)) {
-        verificationData.status = 'verified';
-      }
+      const status = result.sources?.some((source: any) => source.isTrusted) 
+        ? 'verified' 
+        : result.status || 'unverified';
       
-      setVerificationResult(verificationData);
+      setVerificationResult({
+        status: status as 'verified' | 'partially_verified' | 'unverified' | null,
+        confidence: result.confidence || 0,
+        reasons: result.reasons || [],
+        sources: result.sources || []
+      });
     } catch (error) {
       console.error('Error verifying news:', error);
       setVerificationResult({
@@ -194,7 +246,12 @@ export const NewsScanner = () => {
   // Clear verification result
   const clearVerification = () => {
     setVerificationText('');
-    setVerificationResult(null);
+    setVerificationResult({
+      status: null,
+      confidence: 0,
+      reasons: [],
+      sources: []
+    });
   };
 
   // Get badge variant based on classification
