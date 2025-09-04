@@ -196,7 +196,7 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const PORT = config.port;
+const PORT = process.env.PORT || config.port || 3001;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Environment: ${config.env}`);
