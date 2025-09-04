@@ -1,17 +1,17 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
-const config = require('./config/env');
-const hiveService = require('./services/hiveService');
-const analysisRoutes = require('./routes/analysis.js');
-const analyzedNewsRoutes = require('./routes/analyzedNews.js');
-const newsRoutes = require('./routes/news.js');
-const newsVerificationRoutes = require('./routes/newsVerificationRoutes.js');
-require('./services/telegramBot'); // Initialize Telegram bot
-const { createServer } = require('http');
-const { Server } = require('socket.io');
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
+import config from './config/env.js';
+import hiveService from './services/hiveService.js';
+import analysisRoutes from './routes/analysis.js';
+import analyzedNewsRoutes from './routes/analyzedNews.js';
+import newsRoutes from './routes/news.js';
+import newsVerificationRoutes from './routes/newsVerificationRoutes.js';
+import './services/telegramBot.ts'; // Initialize Telegram bot
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 
 // Initialize Express app
 const app = express();
@@ -41,7 +41,10 @@ app.use(helmet());
 const corsOptions = {
   origin: function (origin, callback) {
     const allowedOrigins = [
-      'http://localhost:8080',
+      'http://localhost:5173', // Vite dev server
+      'http://localhost:3000', // Common React dev server
+      'https://safelens.vercel.app', // Production frontend
+      'https://safelens-git-*.vercel.app', // Vercel preview deployments
       'http://localhost:8081',
       'http://localhost:8082',
       'http://localhost:5173',
@@ -103,8 +106,14 @@ app.get('/health', (req, res) => {
 });
 
 // Expose /tmp directory for static file serving (for Sightengine image analysis)
-const path = require('path');
-const tmpDir = path.join(path.resolve(), 'tmp');
+import { join, resolve } from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const tmpDir = join(resolve(), 'tmp');
 app.use('/tmp', express.static(tmpDir));
 
 // API Routes
