@@ -1,5 +1,5 @@
-const express = require("express");
-const router = express.Router();
+import { Router } from 'express';
+const router = Router();
 
 // Basic analysis endpoint
 router.post("/", (req, res) => {
@@ -26,4 +26,4 @@ router.post("/", (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
