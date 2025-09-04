@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
+import { jsPDF } from "jspdf";
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 const SUPPORTED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
@@ -18,6 +19,67 @@ export const MediaScanner = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  const downloadReport = () => {
+    if (!results) return;
+    
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const margin = 20;
+    const lineHeight = 8;
+    let yPos = 20;
+    
+    // Add title
+    doc.setFontSize(20);
+    doc.text('Media Scan Report', pageWidth / 2, yPos, { align: 'center' });
+    yPos += lineHeight * 2;
+    
+    // Add scan details
+    doc.setFontSize(12);
+    doc.text(`Scan Date: ${new Date().toLocaleString()}`, margin, yPos);
+    yPos += lineHeight;
+    doc.text(`File Name: ${selectedFile?.name || 'N/A'}`, margin, yPos);
+    yPos += lineHeight;
+    doc.text(`File Type: ${selectedFile?.type || 'N/A'}`, margin, yPos);
+    yPos += lineHeight * 2;
+    
+    // Add verdict
+    doc.setFontSize(16);
+    doc.text('Verdict:', margin, yPos);
+    yPos += lineHeight;
+    doc.setFontSize(14);
+    doc.setTextColor(results.verdict === 'real' ? '#10b981' : '#ef4444');
+    doc.text(
+      results.verdict === 'real' ? '✅ Authentic Media' : '❌ Potential Deepfake', 
+      margin + 10, 
+      yPos
+    );
+    doc.setTextColor('#000000');
+    yPos += lineHeight * 1.5;
+    
+    // Add confidence
+    doc.setFontSize(14);
+    doc.text(`Confidence: ${results.confidence}%`, margin, yPos);
+    yPos += lineHeight * 2;
+    
+    // Add detection reasons
+    doc.setFontSize(14);
+    doc.text('Detection Reasons:', margin, yPos);
+    yPos += lineHeight * 1.5;
+    
+    doc.setFontSize(12);
+    results.reasons.forEach((reason: string) => {
+      if (yPos > 250) { // Add new page if needed
+        doc.addPage();
+        yPos = 20;
+      }
+      doc.text(`• ${reason}`, margin + 5, yPos);
+      yPos += lineHeight;
+    });
+    
+    // Save the PDF
+    doc.save(`media-scan-report-${new Date().toISOString().slice(0, 10)}.pdf`);
+  };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -327,7 +389,13 @@ export const MediaScanner = () => {
                   <p className="text-xs text-muted-foreground">
                     Scanned: {results.timestamp}
                   </p>
-                  <Button variant="outline" size="sm" className="mt-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={downloadReport}
+                    disabled={!results}
+                  >
                     Download Report
                   </Button>
                 </div>
