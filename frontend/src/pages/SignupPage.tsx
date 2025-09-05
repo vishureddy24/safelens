@@ -14,7 +14,7 @@ const SignupPage: React.FC = () => {
     setError(null);
     try {
       await signup(email, password);
-      navigate("/dashboard");
+      navigate("/");
     } catch (err: any) {
       setError(err.message);
     }
@@ -57,7 +57,8 @@ const SignupPage: React.FC = () => {
         </p>
       </div>
     </div>
-  );
+  )
+  ;
 };
 
 export default SignupPage;
