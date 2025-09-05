@@ -45,26 +45,34 @@ const corsOptions = {
       'http://localhost:3000', // Common React dev server
       'https://safelens.vercel.app', // Production frontend
       'https://safelens-git-*.vercel.app', // Vercel preview deployments
-      'http://localhost:8081',
-      'http://localhost:8082',
-      'http://localhost:5173',
-      'http://127.0.0.1:8080',
-      'http://127.0.0.1:8081',
-      'http://127.0.0.1:8082',
-      'http://127.0.0.1:5173',
-      "https://safelensai.onrender.com", 
-      config.frontendUrl
-    ];
+      'https://safelensai.onrender.com', // Production Render frontend
+      'https://safelens-izrh.onrender.com', // Production Render backend
+      config.frontendUrl || ''
+    ].filter(Boolean); // Remove any empty strings
     
     // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('No origin header present, allowing request');
+      return callback(null, true);
+    }
     
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = `CORS policy blocks this request: ${origin}`;
+    // Check if origin is in allowed list or matches a pattern
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      // Handle wildcard domains
+      if (allowedOrigin.includes('*')) {
+        const regex = new RegExp(allowedOrigin.replace('.', '\.').replace('*', '.*'));
+        return regex.test(origin);
+      }
+      return origin === allowedOrigin;
+    });
+    
+    if (!isAllowed) {
+      const msg = `CORS policy blocks this request: ${origin}. Allowed origins: ${allowedOrigins.join(', ')}`;
       console.warn(msg);
       return callback(new Error(msg), false);
     }
     
+    console.log(`Allowing CORS request from origin: ${origin}`);
     return callback(null, true);
   },
   credentials: true,
