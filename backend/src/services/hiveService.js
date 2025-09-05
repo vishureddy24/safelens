@@ -34,9 +34,29 @@ class HiveService {
    * @param {string} fileName - Original file name
    * @returns {Promise<Object>} Analysis results
    */
+  /**
+   * Save file to temporary storage and get its URL
+   * @private
+   */
+  async #saveTempFile(file, fileName) {
+    const tempDir = path.join(__dirname, '../../tmp');
+    if (!fs.existsSync(tempDir)) {
+      fs.mkdirSync(tempDir, { recursive: true });
+    }
+    const tempFilePath = path.join(tempDir, `${Date.now()}_${path.basename(fileName)}`);
+    fs.writeFileSync(tempFilePath, file);
+    return tempFilePath;
+  }
+
+  /**
+   * Analyze media file (image or video)
+   * @param {Buffer} file - File buffer
+   * @param {string} fileName - Original file name
+   * @returns {Promise<Object>} Analysis results
+   */
   async analyzeMedia(file, fileName) {
-    if (!this.isEnabled) {
-      return this.mockAnalysis(file, fileName);
+    if (!file || !fileName) {
+      throw new Error('File and fileName are required');
     }
 
     const fileExt = path.extname(fileName).toLowerCase();
@@ -45,38 +65,51 @@ class HiveService {
 
     try {
       if (isVideo) {
+        // Use Hive API for video analysis
         return await this.analyzeWithHive(file, fileName);
       } else if (isImage) {
-        // Save image to a temp file and generate a local URL
-        const tempDir = path.join(__dirname, '../../tmp');
-        if (!fs.existsSync(tempDir)) {
-          fs.mkdirSync(tempDir);
-        }
-        const tempFilePath = path.join(tempDir, `${Date.now()}_${fileName}`);
-        fs.writeFileSync(tempFilePath, file);
-
-        // Generate a local URL (assuming your server serves static files from /tmp)
-        // You may need to expose this folder in your Express app: app.use('/tmp', express.static(path.join(__dirname, '../../tmp')));
-        const localUrl = `${config.baseUrl || 'http://localhost:3001'}/tmp/${path.basename(tempFilePath)}`;
-
+        // Use Sightengine for image analysis
+        const tempFilePath = await this.#saveTempFile(file, fileName);
         try {
-          const result = await sightEngineService.checkDeepfake(localUrl);
+          const localUrl = `${config.baseUrl || 'http://localhost:3001'}/tmp/${path.basename(tempFilePath)}`;
+          
+          // Check for both deepfake and NSFW content
+          const [deepfakeResult, nsfwResult] = await Promise.all([
+            sightEngineService.checkDeepfake(localUrl),
+            sightEngineService.checkNsfw(localUrl)
+          ]);
+
           // Clean up temp file
           fs.unlinkSync(tempFilePath);
-          // Format result to match expected output
+
+          // Combine results
+          const isSuspicious = deepfakeResult.isDeepfake || nsfwResult.isNsfw;
+          const reasons = [];
+          
+          if (deepfakeResult.isDeepfake) {
+            reasons.push('AI detected possible manipulation or deepfake indicators');
+          }
+          if (nsfwResult.isNsfw) {
+            reasons.push('NSFW content detected');
+          }
+          if (reasons.length === 0) {
+            reasons.push('No suspicious content detected');
+          }
+
           return {
-            verdict: result.isDeepfake ? 'suspicious' : 'safe',
-            confidence: result.analysis.faces && result.analysis.faces[0]?.quality?.score
-              ? Math.round(result.analysis.faces[0].quality.score * 100)
+            verdict: isSuspicious ? 'suspicious' : 'safe',
+            confidence: deepfakeResult.analysis.faces?.[0]?.quality?.score
+              ? Math.round(deepfakeResult.analysis.faces[0].quality.score * 100)
               : 80,
-            reasons: result.isDeepfake
-              ? ['AI detected possible manipulation or deepfake indicators']
-              : ['No manipulation indicators found'],
+            reasons,
             timestamp: new Date().toISOString(),
             analysisType: 'image',
             apiUsed: 'Sightengine',
             fileName,
-            raw: result.analysis
+            raw: {
+              deepfake: deepfakeResult.analysis,
+              nsfw: nsfwResult.analysis
+            }
           };
         } catch (err) {
           // Clean up temp file on error
@@ -97,27 +130,57 @@ class HiveService {
    * Analyze video using Hive AI API
    * @private
    */
+  /**
+   * Analyze video using Hive AI API
+   * @private
+   */
   async analyzeWithHive(file, fileName) {
-    const formData = new FormData();
-    formData.append('media', file, { 
-      filename: fileName || 'media',
-      contentType: this.getContentType(fileName)
-    });
+    if (!this.isEnabled) {
+      return this.mockAnalysis(file, fileName);
+    }
+
+    const tempFilePath = await this.#saveTempFile(file, fileName);
     
-    formData.append('options', JSON.stringify({
-      tasks: ['deepfake_detection'],
-      output: { confidence: true, predictions: true, summary: true }
-    }));
+    try {
+      const form = new FormData();
+      form.append('file', fs.createReadStream(tempFilePath));
+      form.append('media_type', 'video');
+      form.append('with_face_detection', 'true');
+      form.append('with_deepfake_detection', 'true');
+      form.append('with_content_moderation', 'true');
 
-    const response = await this.client.post('/analyze', formData, {
-      headers: {
-        ...formData.getHeaders(),
-        'Authorization': `Token ${this.apiKey}`
-      },
-      maxBodyLength: Infinity
-    });
+      const response = await this.client.post('/analyze', form, {
+        headers: {
+          ...form.getHeaders(),
+          'Authorization': `Token ${this.apiKey}`,
+        },
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
+      });
 
-    return this.formatHiveResults(response.data);
+      // Process the response
+      const analysis = response.data;
+      const isSuspicious = this.#isSuspiciousVideo(analysis);
+
+      return {
+        verdict: isSuspicious ? 'suspicious' : 'safe',
+        confidence: this.#calculateVideoConfidence(analysis),
+        reasons: this.#getSuspiciousVideoReasons(analysis),
+        timestamp: new Date().toISOString(),
+        analysisType: 'video',
+        apiUsed: 'Hive AI',
+        fileName,
+        raw: analysis
+      };
+    } catch (error) {
+      console.error('Hive API error:', error);
+      throw new Error('Failed to analyze video with Hive API');
+    } finally {
+      // Clean up temp file
+      if (fs.existsSync(tempFilePath)) {
+        fs.unlinkSync(tempFilePath);
+      }
+    }
   }
 
   /**
@@ -170,13 +233,76 @@ class HiveService {
    * Get content type based on file extension
    * @private
    */
+  /**
+   * Check if video analysis indicates suspicious content
+   * @private
+   */
+  #isSuspiciousVideo(analysis) {
+    if (!analysis.status || analysis.status[0].type !== 'success') {
+      return false;
+    }
+
+    // Check for deepfake indicators
+    const deepfakeScore = analysis.response?.output?.[0]?.deepfake_detection?.score || 0;
+    const faceCount = analysis.response?.output?.[0]?.face_detection?.length || 0;
+    
+    // Consider video suspicious if deepfake score is above threshold or no faces detected
+    return deepfakeScore > 0.7 || faceCount === 0;
+  }
+
+  /**
+   * Calculate confidence score for video analysis
+   * @private
+   */
+  #calculateVideoConfidence(analysis) {
+    if (!analysis.status || analysis.status[0].type !== 'success') {
+      return 0;
+    }
+    
+    const deepfakeScore = analysis.response?.output?.[0]?.deepfake_detection?.score || 0;
+    // Convert to confidence percentage (higher is more confident in detection)
+    return Math.round((1 - Math.abs(0.5 - deepfakeScore)) * 100);
+  }
+
+  /**
+   * Get reasons for suspicious video content
+   * @private
+   */
+  #getSuspiciousVideoReasons(analysis) {
+    const reasons = [];
+    
+    if (analysis.status?.[0]?.type === 'success') {
+      const output = analysis.response?.output?.[0];
+      
+      if (output?.deepfake_detection?.score > 0.7) {
+        reasons.push('High probability of AI-generated or manipulated content');
+      }
+      
+      if (output?.face_detection?.length === 0) {
+        reasons.push('No faces detected in the video');
+      }
+      
+      if (output?.content_moderation?.length > 0) {
+        reasons.push('Potential inappropriate content detected');
+      }
+    } else {
+      reasons.push('Analysis failed or incomplete');
+    }
+    
+    return reasons.length > 0 ? reasons : ['No suspicious content detected'];
+  }
+
+  /**
+   * Get content type based on file extension
+   * @private
+   */
   getContentType(fileName) {
     const ext = path.extname(fileName).toLowerCase();
     const types = {
       '.jpg': 'image/jpeg',
       '.jpeg': 'image/jpeg',
       '.png': 'image/png',
-      '.gif': 'image/gif',
+      '.webp': 'image/webp',
       '.mp4': 'video/mp4',
       '.webm': 'video/webm',
       '.mov': 'video/quicktime',
