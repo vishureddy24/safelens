@@ -1,11 +1,17 @@
-import { defineConfig, type PluginOption } from "vite";
-import react from "@vitejs/plugin-react-swc";
-import path from "path";
-import { componentTagger } from "lovable-tagger";
-import { nodePolyfills } from 'vite-plugin-node-polyfills';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react-swc'
+import path from 'path'
+import { componentTagger } from 'lovable-tagger'
+import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 export default defineConfig(({ mode }) => ({
-  base: '/',
+  base: './', // Changed from '/' to './' for relative paths
+  publicDir: 'public',
+  define: {
+    'import.meta.env.VITE_API_URL': JSON.stringify(process.env.VITE_API_URL || 'https://safelens-izrh.onrender.com'),
+    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL || 'https://wbqydwbbmepihqdsfahg.supabase.co'),
+    'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_X8NQZk0uzvykJ4imbQ7DUQ_SojrzFOo')
+  },
   server: mode === 'development' ? {
     host: "0.0.0.0",
     port: 5173,
@@ -13,7 +19,7 @@ export default defineConfig(({ mode }) => ({
     open: true,
     proxy: {
       '/api': {
-        target: process.env.VITE_BACKEND_URL || 'http://localhost:3001',
+        target: process.env.VITE_API_URL || 'http://localhost:3001',
         changeOrigin: true,
         secure: false,
         rewrite: (path: string) => path.replace(/^\/api/, '')
@@ -23,14 +29,6 @@ export default defineConfig(({ mode }) => ({
   preview: {
     port: 3000,
     strictPort: true,
-    proxy: {
-      '/api': {
-        target: process.env.VITE_BACKEND_URL || 'http://localhost:3001',
-        changeOrigin: true,
-        secure: false,
-        rewrite: (path: string) => path.replace(/^\/api/, '')
-      }
-    }
   },
   plugins: [
     react(),
@@ -43,10 +41,7 @@ export default defineConfig(({ mode }) => ({
       },
     }),
     mode === 'development' ? componentTagger() : null,
-  ].filter(Boolean) as PluginOption[],
-  define: {
-    global: 'globalThis'
-  },
+  ].filter(Boolean),
   build: {
     target: 'esnext',
     chunkSizeWarningLimit: 1000,
@@ -66,6 +61,6 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
-    },
-  },
-}));
+    }
+  }
+}))
