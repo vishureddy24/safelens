@@ -47,6 +47,7 @@ const corsOptions = {
       'https://safelens-git-*.vercel.app', // Vercel preview deployments
       'https://safelensai.onrender.com', // Production Render frontend
       'https://safelens-izrh.onrender.com', // Production Render backend
+      'https://safelensai.onrender.com', // Ensure production frontend is included
       config.frontendUrl || ''
     ].filter(Boolean); // Remove any empty strings
     
@@ -56,23 +57,29 @@ const corsOptions = {
       return callback(null, true);
     }
     
+    // Normalize origin by removing trailing slashes
+    const normalizedOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+    
     // Check if origin is in allowed list or matches a pattern
     const isAllowed = allowedOrigins.some(allowedOrigin => {
+      // Normalize allowed origin
+      const normalizedAllowedOrigin = allowedOrigin.endsWith('/') ? allowedOrigin.slice(0, -1) : allowedOrigin;
+      
       // Handle wildcard domains
-      if (allowedOrigin.includes('*')) {
-        const regex = new RegExp(allowedOrigin.replace('.', '\.').replace('*', '.*'));
-        return regex.test(origin);
+      if (normalizedAllowedOrigin.includes('*')) {
+        const regex = new RegExp(normalizedAllowedOrigin.replace(/\./g, '\\.').replace(/\*/g, '.*'));
+        return regex.test(normalizedOrigin);
       }
-      return origin === allowedOrigin;
+      return normalizedOrigin === normalizedAllowedOrigin;
     });
     
     if (!isAllowed) {
-      const msg = `CORS policy blocks this request: ${origin}. Allowed origins: ${allowedOrigins.join(', ')}`;
+      const msg = `CORS policy blocks this request: ${normalizedOrigin}. Allowed origins: ${allowedOrigins.join(', ')}`;
       console.warn(msg);
       return callback(new Error(msg), false);
     }
     
-    console.log(`Allowing CORS request from origin: ${origin}`);
+    console.log(`Allowing CORS request from origin: ${normalizedOrigin}`);
     return callback(null, true);
   },
   credentials: true,
