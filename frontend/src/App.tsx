@@ -60,6 +60,14 @@ const App = () => (
               }
             />
             <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Navigate to="/" replace />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/news-verification"
               element={
                 <ProtectedRoute>
