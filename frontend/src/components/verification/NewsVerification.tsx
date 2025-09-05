@@ -3,6 +3,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import VerificationStatus from '@/components/verification/VerificationStatus';
 import { Loader2 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 interface VerificationResult {
   status: 'verified' | 'partially_verified' | 'unverified';
@@ -32,19 +33,7 @@ const NewsVerification = () => {
     setError(null);
 
     try {
-      const response = await fetch('/api/news-verification', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ headline }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to verify headline');
-      }
-
-      const data = await response.json();
+      const data = await api.post('/api/news-verification', { headline });
       setResult(data.data);
     } catch (err) {
       setError('An error occurred while verifying the headline');
