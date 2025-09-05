@@ -1,81 +1,292 @@
-# SafeLens - AI-Powered News Verification Platform
-
-## Project Overview
+# SafeLens 🔍
 
 SafeLens is an advanced news verification platform that helps users identify credible news sources and detect potential misinformation. Using AI-powered analysis and trusted source verification, SafeLens provides confidence scores and detailed analysis for news articles.
 
-## Key Features
+## 🌟 Features
 
-- 🔍 AI-powered news verification
-- ✅ Trusted source validation
-- 📊 Confidence scoring system
-- 🛡️ Protection against misinformation
-- 🚀 Fast and reliable analysis
+- 🔍 AI-powered news verification - Advanced algorithms analyze news content for authenticity
+- ✅ Trusted source validation - Cross-reference with reliable news sources
+- 📊 Confidence scoring system** - Get numerical confidence scores for news reliability
+- 🛡️ Protection against misinformation - Identify potentially false or misleading content
+- 🚀 Fast and reliable analysis - Quick processing with detailed insights
+- 🌐 Web-based platform - Accessible from any device with internet connection
 
-## Getting Started
+## 🚀 Live Demo
 
-There are several ways of editing your application.
+The application is deployed and ready to use:
+- Live Application: [https://safelens-izrh.onrender.com]
+- API Endpoint: [https://safelensai.onrender.com]
 
-**Use Lovable**
+## 🛠️ Technology Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/49417c11-8fce-4ebd-ae84-42366cbc7254) and start prompting.
+### Frontend
+- React - Modern JavaScript library for building user interfaces
+- TypeScript - Type-safe JavaScript for better development experience
+- Vite - Fast build tool and development server
+- Tailwind CSS - Utility-first CSS framework for styling
+- shadcn/ui - Beautiful and accessible UI components
 
-Changes made via Lovable will be committed automatically to this repo.
+### Backend
+- Node.js- JavaScript runtime for server-side development
+- Express.js - Web application framework
+- AI Integration - Machine learning models for news verification
+- Database - [Specify your database - MongoDB, PostgreSQL, etc.]
 
-**Use your preferred IDE**
+## 📦 Installation & Setup
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Prerequisites
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- Node.js (v16 or higher)
+- npm or yarn package manager
+- Git
 
-Follow these steps:
+### Clone the Repository
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+```bash
+git clone https://github.com/vishureddy24/safelens.git
+cd safelens
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Backend Setup
 
-# Step 3: Install the necessary dependencies.
-npm i
+1. Navigate to the backend directory:
+```bash
+cd backend
+```
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Create environment variables file:
+```bash
+cp .env.example .env
+```
+
+4. Configure your environment variables in `.env`:
+```env
+PORT=5000
+DATABASE_URL=your_database_url
+API_KEY=your_api_key
+NODE_ENV=development
+```
+
+5. Start the backend server:
+```bash
+npm start
+```
+
+The backend will be running on `http://localhost:5000`
+
+### Frontend Setup
+
+1. Navigate to the frontend directory:
+```bash
+cd frontend
+```
+
+2. Install dependencies:
+```bash
+npm install
+```
+
+3. Create environment variables file:
+```bash
+cp .env.example .env
+```
+
+4. Configure your environment variables in `.env`:
+```env
+VITE_API_URL=http://localhost:5000/api
+VITE_APP_NAME=SafeLens
+```
+
+5. Start the development server:
+```bash
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The frontend will be running on `http://localhost:5173`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🔧 Development Scripts
 
-**Use GitHub Codespaces**
+### Backend
+```bash
+npm start          # Start production server
+npm run dev        # Start development server with hot reload
+npm run build      # Build for production
+npm test           # Run tests
+npm run lint       # Run linting
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Frontend
+```bash
+npm run dev        # Start development server
+npm run build      # Build for production
+npm run preview    # Preview production build
+npm run lint       # Run linting
+npm test           # Run tests
+```
 
-## What technologies are used for this project?
 
-This project is built with:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🔑 Environment Variables
 
-## How can I deploy this project?
+### Backend Environment Variables
 
-Simply open [Lovable](https://lovable.dev/projects/49417c11-8fce-4ebd-ae84-42366cbc7254) and click on Share -> Publish.
+Create a `.env` file in the backend directory with the following variables:
 
-## Can I connect a custom domain to my Lovable project?
+```env
+# Server Configuration
+PORT=5000
+NODE_ENV=development
 
-Yes, you can!
+# Database
+DATABASE_URL=your_database_connection_string
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+# API Keys
+NEWS_API_KEY=your_news_api_key
+AI_SERVICE_API_KEY=your_ai_service_key
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+# CORS
+FRONTEND_URL=http://localhost:5173
+
+# JWT
+JWT_SECRET=your_jwt_secret_key
+```
+
+### Frontend Environment Variables
+
+Create a `.env` file in the frontend directory with the following variables:
+
+```env
+# API Configuration
+VITE_API_URL=http://localhost:5000/api
+VITE_APP_NAME=SafeLens
+VITE_APP_VERSION=1.0.0
+
+# Feature Flags
+VITE_ENABLE_ANALYTICS=false
+VITE_ENABLE_DEBUG=false
+```
+
+## 🚀 Deployment
+
+This project is deployed on Render with separate services for frontend and backend.
+
+### Backend Deployment on Render
+
+1. Connect your GitHub repository to Render
+2. Create a new Web Service
+3. Set the build command: `cd backend && npm install`
+4. Set the start command: `cd backend && npm start`
+5. Add environment variables in Render dashboard
+
+### Frontend Deployment on Render
+
+1. Create a new Static Site
+2. Set the build command: `cd frontend && npm install && npm run build`
+3. Set the publish directory: `frontend/dist`
+4. Add environment variables in Render dashboard
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📝 API Documentation
+
+### Base URL
+```
+Production: [Your Render Backend URL]
+Development: http://localhost:5000/api
+```
+
+### Main Endpoints
+
+#### Verify News Article
+```http
+POST /api/verify
+Content-Type: application/json
+
+{
+  "url": "https://example-news-article.com",
+  "text": "Optional: Article text content"
+}
+```
+
+Response:
+```json
+{
+  "success": true,
+  "data": {
+    "confidence_score": 0.85,
+    "is_credible": true,
+    "source_reliability": "high",
+    "analysis": {
+      "fact_check_results": [...],
+      "source_verification": {...},
+      "content_analysis": {...}
+    }
+  }
+}
+```
+
+## 🧪 Testing
+
+### Backend Testing
+```bash
+cd backend
+npm test                 # Run all tests
+npm run test:watch      # Run tests in watch mode
+npm run test:coverage   # Run tests with coverage report
+```
+
+### Frontend Testing
+```bash
+cd frontend
+npm test                 # Run all tests
+npm run test:watch      # Run tests in watch mode
+npm run test:coverage   # Run tests with coverage report
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+1. Port already in use**: Change the port in your `.env` file
+2. CORS errors: Ensure `FRONTEND_URL` is set correctly in backend `.env`
+3. Module not found: Run `npm install` in the respective directory
+4. Build failures: Clear cache with `npm run clean` and rebuild
+
+### Getting Help
+
+- Check the [Issues](https://github.com/vishureddy24/safelens/issues) section
+- Create a new issue with detailed description
+- Include error messages and system information
+
+
+## 👥 Authors
+
+- Pavani Reddy - [@pavani1210](https://github.com/pavani1210)
+- Nalathatagari Viswa Vardhan Reddy - [@vishureddy24](https://github.com/vishureddy24)
+
+## 🙏 Acknowledgments
+
+- Thanks to all contributors who have helped improve this project
+- Inspired by the need for reliable news verification in the digital age
+- Built with modern web technologies and AI capabilities
+
+## 📊 Project Status
+
+- ✅ Core functionality implemented
+- ✅ Frontend and backend deployed
+- ✅ AI verification system active
+- 🔄 Continuous improvements and feature additions
+
+---
+
