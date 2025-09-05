@@ -84,10 +84,14 @@ export async function analyzeMessage(message: MessageAnalysis): Promise<Analysis
   // Threshold for considering a message as fraud
   isFraud = confidence > 0.3;
 
+  // Ensure confidence is between 0 and 1, then convert to percentage (0-100)
+  const normalizedConfidence = Math.max(0, Math.min(1, confidence));
+  const confidencePercentage = Math.round(normalizedConfidence * 100);
+
   return {
     isFraud,
     reason: reasons.join('\n') || 'No suspicious patterns detected',
-    confidence: Math.min(Math.round(confidence * 100) / 100, 1) // Cap at 1.0
+    confidence: confidencePercentage
   };
 }
 
